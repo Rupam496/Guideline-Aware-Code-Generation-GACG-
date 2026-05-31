@@ -1,0 +1,706 @@
+## 1. Indentation
+Priority: LOW
+Category: Formatting
+AST: Layout Rule
+
+Use 4 spaces per indentation level.
+
+Use aligned continuation lines or hanging indents.
+
+### Correct:
+foo = long_function_name(
+    var_one,
+    var_two
+)
+
+### Wrong:
+foo = long_function_name(
+  var_one,
+  var_two
+)
+
+---
+
+## 2. Line Length
+Priority: LOW
+Category: Formatting
+AST: Layout Rule
+
+Prefer lines under 79 characters when practical.
+
+### Correct:
+x = 10
+
+### Wrong:
+x = "This is a very long line that unnecessarily exceeds recommended width for readability"
+
+---
+
+## 3. Naming Conventions
+Priority: MEDIUM
+Category: Readability
+AST: FunctionDef/ClassDef/Assign(name style)
+
+Functions and variables should use snake_case.
+Classes should use PascalCase.
+Constants should use UPPER_CASE.
+
+### Correct:
+def my_function():
+    pass
+
+class MyClass:
+    pass
+
+MAX_VALUE = 10
+
+### Wrong:
+def MyFunction():
+    pass
+
+class my_class:
+    pass
+
+maxValue = 10
+
+---
+
+## 4. Imports
+Priority: MEDIUM
+Category: Maintainability
+AST: Import / ImportFrom
+
+Use separate import lines and group:
+1. Standard library
+2. Third-party
+3. Local modules
+
+### Correct:
+import os
+import sys
+
+import numpy as np
+
+from mypkg import helper
+
+### Wrong:
+import sys, os
+import numpy, mypkg
+
+---
+
+## 5. Whitespace
+Priority: LOW
+Category: Formatting
+AST: Layout Rule
+
+Avoid unnecessary whitespace.
+
+### Correct:
+x = 1
+y = x + 2
+
+### Wrong:
+x=1
+y=x+2
+
+---
+
+## 6. Function Length
+Priority: MEDIUM
+Category: Maintainability
+AST: FunctionDef(body size)
+
+Prefer small focused functions.
+Avoid functions longer than ~50 lines unless justified.
+
+### Correct:
+def add(a, b):
+    return a + b
+
+### Wrong:
+def giant_function():
+    pass
+
+---
+
+## 7. Variable Naming Quality
+Priority: MEDIUM
+Category: Readability
+AST: Assign(target names)
+
+Use meaningful variable names.
+
+### Correct:
+total_count = 10
+
+### Wrong:
+x = 10
+
+---
+
+## 8. Nesting Depth
+Priority: MEDIUM
+Category: Maintainability
+AST: Nested If/For/While depth
+
+Avoid deeply nested code. Prefer max depth around 3.
+
+### Correct:
+if a:
+    if b:
+        do_work()
+
+### Wrong:
+if a:
+    if b:
+        if c:
+            if d:
+                do_work()
+
+---
+
+## 9. Blank Lines
+Priority: LOW
+Category: Formatting
+AST: Layout Rule
+
+Use blank lines to separate top-level definitions.
+
+### Correct:
+def a():
+    pass
+
+
+def b():
+    pass
+
+### Wrong:
+def a():
+    pass
+def b():
+    pass
+
+---
+
+## 10. Whitespace Around Operators
+Priority: LOW
+Category: Formatting
+AST: Layout Rule
+
+Use spaces around binary operators.
+
+### Correct:
+x = a + b
+
+### Wrong:
+x=a+b
+
+---
+
+## 11. Whitespace in Function Calls
+Priority: LOW
+Category: Formatting
+AST: Call / FunctionDef defaults
+
+Do not add spaces around equals in keyword args or defaults.
+
+### Correct:
+func(x=1)
+
+### Wrong:
+func(x = 1)
+
+---
+
+## 12. Whitespace Inside Brackets
+Priority: LOW
+Category: Formatting
+AST: Layout Rule
+
+Avoid extra whitespace inside brackets.
+
+### Correct:
+func(arr[1])
+
+### Wrong:
+func( arr[1] )
+
+---
+
+## 13. Comments
+Priority: LOW
+Category: Documentation
+AST: Comment Rule
+
+Comments should be clear and helpful.
+
+### Correct:
+# Increment retry counter
+
+### Wrong:
+# do thing
+
+---
+
+## 14. Docstrings
+
+Priority: MEDIUM
+Category: Documentation
+AST: FunctionDef/ClassDef without docstring
+
+Public or non-trivial modules, functions, classes, and methods should include concise docstrings that explain purpose, important arguments, return values, side effects, or usage when helpful.
+
+Use one-line docstrings for simple cases and multi-line docstrings for more complex behavior.
+
+Avoid redundant docstrings that merely repeat the function name.
+
+### Correct:
+
+def compute_area(radius: float) -> float:
+    """Return the area of a circle for the given radius."""
+    return 3.14159 * radius ** 2
+
+
+def fetch_data(url: str, timeout: int) -> dict:
+    """
+    Fetch JSON data from the given URL.
+
+    Args:
+        url: Target URL.
+        timeout: Request timeout in seconds.
+
+    Returns:
+        Parsed JSON response.
+    """
+    pass
+
+
+class UserService:
+    """Provide user-related business operations."""
+
+### Wrong:
+
+def compute_area(radius):
+    return 3.14159 * radius ** 2
+
+
+def fetch_data(url, timeout):
+    """fetch data"""
+    pass
+
+
+def save_file(path, content):
+    """save_file"""
+    pass
+
+
+class UserService:
+    pass
+
+---
+
+## 15. String Quotes
+Priority: LOW
+Category: Formatting
+AST: Literal Style Rule
+
+Use consistent quote style in a file.
+
+### Correct:
+name = "Alice"
+
+### Wrong:
+name = 'Alice'
+msg = "Hi"
+
+---
+
+## 16. Return Statements
+Priority: HIGH
+Category: Logic Bug
+AST: Mixed Return(value / bare return)
+
+Use consistent return behavior.
+
+### Correct:
+def f(x):
+    if x > 0:
+        return x
+    return 0
+
+### Wrong:
+def f(x):
+    if x > 0:
+        return x
+    return
+
+---
+
+## 17. Comparison to None
+Priority: HIGH
+Category: Logic Bug
+AST: Compare(== None / != None)
+
+Use `is None` or `is not None`.
+
+### Correct:
+if value is None:
+    pass
+
+### Wrong:
+if value == None:
+    pass
+
+---
+
+## 18. Comparison to Booleans
+Priority: MEDIUM
+Category: Readability
+AST: Compare(x == True/False)
+
+Use boolean values directly.
+
+### Correct:
+if ready:
+    run()
+
+### Wrong:
+if ready == True:
+    run()
+
+---
+
+## 19. Exception Handling
+Priority: HIGH
+Category: Error Handling
+AST: ExceptHandler(type=None)
+
+Catch specific exceptions. Avoid bare except.
+
+### Correct:
+try:
+    x = int(s)
+except ValueError:
+    pass
+
+### Wrong:
+try:
+    x = int(s)
+except:
+    pass
+
+---
+
+## 20. Exception Chaining
+Priority: HIGH
+Category: Error Handling
+AST: Raise without cause inside except
+
+Use `raise ... from e`.
+
+### Correct:
+try:
+    work()
+except IOError as e:
+    raise RuntimeError() from e
+
+### Wrong:
+try:
+    work()
+except IOError:
+    raise RuntimeError()
+
+---
+
+## 21. Context Managers
+Priority: HIGH
+Category: Resource Safety
+AST: open() without with
+
+Use context managers for files/resources.
+
+### Correct:
+with open("a.txt") as f:
+    data = f.read()
+
+### Wrong:
+f = open("a.txt")
+data = f.read()
+f.close()
+
+---
+
+## 22. List Comprehensions
+Priority: MEDIUM
+Category: Pythonic Style
+AST: map/filter(lambda)
+
+Prefer simple comprehensions over map/filter with lambda.
+
+### Correct:
+vals = [x*x for x in nums]
+
+### Wrong:
+vals = list(map(lambda x: x*x, nums))
+
+---
+
+## 23. Type Hints
+Priority: MEDIUM
+Category: Static Analysis
+AST: FunctionDef missing annotations
+
+Use type hints when practical.
+
+### Correct:
+def add(a: int, b: int) -> int:
+    return a + b
+
+### Wrong:
+def add(a, b):
+    return a + b
+
+---
+
+## 24. Magic Numbers
+Priority: MEDIUM
+Category: Maintainability
+AST: Numeric literals repeated
+
+Replace unexplained repeated numbers with constants.
+
+### Correct:
+MAX_RETRIES = 3
+
+### Wrong:
+for _ in range(3):
+    pass
+
+---
+
+## 25. Trailing Whitespace
+Priority: LOW
+Category: Formatting
+AST: Layout Rule
+
+Do not leave trailing whitespace.
+
+### Correct:
+x = 1
+
+### Wrong:
+x = 1   
+
+---
+
+## 26. Semicolons
+Priority: MEDIUM
+Category: Readability
+AST: Multiple statements same line
+
+Do not use semicolons for multiple statements.
+
+### Correct:
+x = 1
+y = 2
+
+### Wrong:
+x = 1; y = 2
+
+---
+
+## 27. Lambda Assignments
+Priority: MEDIUM
+Category: Readability
+AST: Assign(value=Lambda)
+
+Use def instead of assigning lambda.
+
+### Correct:
+def double(x):
+    return x * 2
+
+### Wrong:
+double = lambda x: x * 2
+
+---
+
+## 28. Global Variables
+Priority: HIGH
+Category: Maintainability
+AST: Global(name)
+
+Avoid globals. Pass values explicitly.
+
+### Correct:
+def scale(x, m):
+    return x * m
+
+### Wrong:
+multiplier = 3
+def scale(x):
+    return x * multiplier
+
+---
+
+## 29. Mutable Default Arguments
+Priority: HIGH
+Category: Runtime Bug
+AST: FunctionDef(default=List|Dict|Set)
+
+Use None then create mutable object inside function.
+
+### Correct:
+def add(x, items=None):
+    if items is None:
+        items = []
+    items.append(x)
+
+### Wrong:
+def add(x, items=[]):
+    items.append(x)
+
+---
+
+## 30. f-Strings Over Format
+Priority: LOW
+Category: Modern Python Style
+AST: .format() / % formatting
+
+Prefer f-strings in modern Python.
+
+### Correct:
+msg = f"Hi {name}"
+
+### Wrong:
+msg = "Hi {}".format(name)
+
+---
+
+## 31. Section Comments
+
+Priority: MEDIUM
+Category: Readability
+AST: FunctionDef(long body without comments)
+
+Functions longer than 10 lines should use short section comments to separate logical steps.
+
+### Correct:
+def process_orders(orders):
+    # Validate input
+    if not orders:
+        return []
+
+    # Transform records
+    cleaned = [o.strip() for o in orders]
+
+    # Save results
+    return cleaned
+
+### Wrong:
+def process_orders(orders):
+    if not orders:
+        return []
+    cleaned = [o.strip() for o in orders]
+    return cleaned
+
+---
+
+## 32. Early Returns
+
+Priority: HIGH
+Category: Maintainability
+AST: Deep nested If blocks
+
+Prefer early returns to reduce nesting and improve readability.
+
+### Correct:
+def divide(a, b):
+    if b == 0:
+        return None
+    return a / b
+
+### Wrong:
+def divide(a, b):
+    if b != 0:
+        return a / b
+    else:
+        return None
+
+---
+
+## 33. Named Threshold Constants
+
+Priority: MEDIUM
+Category: Maintainability
+AST: Magic numbers
+
+Use named constants for business thresholds or repeated values.
+
+### Correct:
+MAX_RETRIES = 3
+
+for _ in range(MAX_RETRIES):
+    retry()
+
+### Wrong:
+for _ in range(3):
+    retry()
+
+---
+
+## 34. Main Guard
+
+Priority: MEDIUM
+Category: Python Best Practice
+AST: Top-level executable script without main guard
+
+Executable scripts should use main() and if __name__ == "__main__".
+
+### Correct:
+def main():
+    run_program()
+
+if __name__ == "__main__":
+    main()
+
+### Wrong:
+run_program()
+
+---
+
+## 35. Explicit File Encoding
+
+Priority: MEDIUM
+Category: Reliability
+AST: open() without encoding
+
+Specify encoding="utf-8" for text files unless another encoding is required.
+
+### Correct:
+with open("data.txt", "r", encoding="utf-8") as file:
+    content = file.read()
+
+### Wrong:
+with open("data.txt", "r") as file:
+    content = file.read()
+
+---
+
+## 36. Logging Over Print
+
+Priority: MEDIUM
+Category: Production Readiness
+AST: print() in utility/service code
+
+Prefer logging instead of print statements outside tiny scripts.
+
+### Correct:
+import logging
+
+logger = logging.getLogger(__name__)
+logger.info("Processing started")
+
+### Wrong:
+print("Processing started")
