@@ -1,247 +1,194 @@
-# Guideline-Aware Code Generation (GACG)
+# Setup Instructions (Multi-Machine Deployment)
 
-Guideline-Aware Code Generation (GACG) is a reinforcement learning-based framework designed to fine-tune Large Language Models (LLMs) for generating codes that follows coding guidelines. The framework combines embedding-based guideline retrieval, LLM-based judging, and Group Relative Policy Optimization (GRPO) to improve guideline adherence during code generation.
+This framework follows a distributed deployment architecture consisting of:
+
+* 1 Server Machine
+* Multiple Client Machines
 
 ---
 
-# Project Architecture
+## Step 1: Generate CKKS Context (Server Machine Only)
 
-```text
-Prompt
-   ↓
-Generator LLM
-   ↓
-Generate K Candidate Codes
-   ↓
-Combine:
-(Prompt + All Generated Codes)
-   ↓
-Combined Embedding Generation
-   ↓
-Retrieve Relevant Guidelines
-   ↓
-Judge LLM Evaluation
-   ↓
-Reward Scores
-   ↓
-GRPO Loss Calculation
-   ↓
-Generator Model Update
+Run on the server machine:
+
+```bash
+python encryption/generate_context.py
 ```
 
----
-
-# Models Used
-
-## Generator Model
-
-Model:
+This generates:
 
 ```text
-Qwen/Qwen2.5-Coder-1.5B
+ckks_server_context.bin
+ckks_public_context.bin
 ```
 
 Purpose:
 
-* Generates multiple candidate codes
-* Fine-tuned using LoRA
-* Optimized through GRPO-based reinforcement learning
+* `ckks_server_context.bin` → contains secret key (server only)
+* `ckks_public_context.bin` → shared with clients
 
 ---
 
-## Judge Model
+## Step 2: Distribute Public Context to Clients
 
-Model:
-
-```text
-Qwen/Qwen2.5-Coder-7B-Instruct
-```
-
-Purpose:
-
-* Evaluates generated candidate codes
-* Scores guideline adherence
-* Provides reward signals
-
-Scoring Criteria:
-
-* Correctness
-* Guideline adherence
-* Code quality
-
-Reward Range:
+Copy:
 
 ```text
-0.0 → Poor Quality
-1.0 → Excellent Quality
+ckks_public_context.bin
 ```
+
+from server machine to every client machine.
+
+Do NOT copy:
+
+```text
+ckks_server_context.bin
+```
+
+to clients.
 
 ---
 
-# Guideline Retrieval System
+## Step 3: Prepare Local Data and Build FAISS Index (Client Machines)
 
-The framework uses semantic embedding-based retrieval to dynamically select relevant coding guidelines during training.
+Each client machine should maintain its own dataset.
 
-## Guideline Database
-
-Coding guidelines are stored in:
+Example:
 
 ```text
-guidelines.txt
+client/Client1/data/
+client/Client2/data/
 ```
 
-The guideline file contains:
-
-* rule descriptions
-* correct code examples
-* incorrect code examples
-
-These guidelines are processed and converted into vector embeddings during indexing. The generated embeddings are stored inside:
-
-```text
-vector_store.npz
-```
-
-## Query Construction
-
-A single query representation is created using:
-
-```text
-Prompt + Generated Code 1 + Generated Code 2 + ... + Generated Code K
-```
-
-## Retrieval Process
-
-1. Combine prompt and generated codes
-2. Create a single embedding vector representation
-3. Perform similarity search over the embedded guideline database (`vector_store.npz`)
-4. Retrieve top-k relevant guidelines
-5. Send retrieved guidelines to the Judge LLM for evaluation
-
-The retrieved guidelines contain:
-
-* rule descriptions
-* correct code examples
-* incorrect code examples
-
----
-
-# Distributed Architecture
-
-## Machine 1 (Training Machine)
-
-Responsibilities:
-
-* Generator model
-* Reward pipeline
-* Embedding retrieval
-* GRPO training
-* LoRA fine-tuning
-
-Files:
-
-```text
-train.py
-grpo_trainer.py
-reward_pipeline.py
-judge.py
-vector_store.py
-```
-
----
-
-## Machine 2 (Judge Server)
-
-Responsibilities:
-
-* Judge LLM inference
-* Reward computation
-* HTTP API server
-
-Files:
-
-```text
-judge_server.py
-```
-
-Communication:
-
-```text
-Machine 1
-    ↓ HTTP Request
-Machine 2
-    ↓ Reward Response
-Machine 1
-```
-
-Used Technologies:
-
-* FastAPI
-* Uvicorn
-* Requests
-
----
-
-# Build Guideline Index
+Build local vector indices:
 
 ```bash
-python build_index.py guidelines.txt
+python build_index.py
 ```
 
-Generates:
+This creates:
 
 ```text
-vector_store.npz
+faiss_index/
+├── index.faiss
+├── chunks.npy
+```
+
+Each client builds its own FAISS index locally.
+
+---
+
+## Step 4: Configure Machine Roles
+
+### Server Machine
+
+Required files:
+
+```text
+server.py
+server/
+encryption/
+config/
+ckks_server_context.bin
+ckks_public_context.bin
 ```
 
 ---
 
-# Start Judge Server (Machine 2)
+### Client Machines
 
-Set environment variables:
+Required files:
 
-```bash
-export JUDGE_API_KEY=secret_key
-export JUDGE_MODEL=Qwen/Qwen2.5-Coder-7B-Instruct
+```text
+client.py
+client/
+encryption/
+models/
+rag_pipeline/
+ckks_public_context.bin
 ```
+
+---
+
+## Step 5: Start Server Machine
 
 Run:
 
 ```bash
-python judge_server.py
+python server.py
 ```
+
+The server:
+
+* initializes global model
+* loads CKKS secret context
+* starts Flower server
+* waits for client connections
 
 ---
 
-# Start Training (Machine 1)
+## Step 6: Start Client Machines
 
-Set environment variables:
-
-```bash
-export JUDGE_SERVER_URL=http://<machine2_ip>:8100
-export JUDGE_API_KEY=secret_key
-```
-
-Run:
+Run on each client machine:
 
 ```bash
-python train.py prompts.txt
+python client.py
 ```
+
+Each client:
+
+* loads local dataset
+* loads FAISS index
+* trains locally
+* encrypts model weights
+* sends encrypted updates
 
 ---
 
-# Implementation and Results
-
-The proposed Guideline-Aware Code Generation (GACG) framework has been fully implemented and evaluated in a distributed training environment. Experimental observations indicate that the fine-tuned model demonstrates improved adherence to coding guidelines compared to the base model while maintaining code quality and correctness.
-
-The framework successfully learns guideline-aware generation behavior through reinforcement learning using retrieved coding rules and LLM-based reward signals.
-
-Generated outputs from both the base model and the fine-tuned model are stored in:
+# Deployment Workflow
 
 ```text
-results/
+Server Starts
+      ↓
+Clients Connect
+      ↓
+Receive Global Model
+      ↓
+Local Training
+      ↓
+Encrypt Weights
+      ↓
+Send Encrypted Updates
+      ↓
+Encrypted Aggregation
+      ↓
+Global Model Update
+      ↓
+Repeat
 ```
 
-This directory contains generated outputs used for qualitative comparison between the base model and the fine-tuned model.
-
 ---
+
+# Security Notes
+
+Server Machine Stores:
+
+```text
+ckks_server_context.bin
+ckks_public_context.bin
+```
+
+Client Machines Store:
+
+```text
+ckks_public_context.bin
+```
+
+Privacy guarantee:
+
+```text
+Clients encrypt weights
+Server aggregates encrypted updates
+Only aggregated model is decrypted
+Raw client weights remain hidden
+```
