@@ -1,0 +1,362 @@
+[
+  {
+    "rule_number": "1",
+    "rule_title": "Indentation",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Layout Rule\n\nUse 4 spaces per indentation level.\n\nUse aligned continuation lines or hanging indents.",
+    "correct_code": "foo = long_function_name(\n    var_one,\n    var_two\n)",
+    "wrong_code": "foo = long_function_name(\n  var_one,\n  var_two\n)",
+    "keywords": "indentation",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "2",
+    "rule_title": "Line Length",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Layout Rule\n\nPrefer lines under 79 characters when practical.",
+    "correct_code": "x = 10",
+    "wrong_code": "x = \"This is a very long line that unnecessarily exceeds recommended width for readability\"",
+    "keywords": "line, length, 79 chars, pep8 line",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Formatting"
+  },
+  {
+    "rule_number": "3",
+    "rule_title": "Naming Conventions",
+    "description": "Priority: MEDIUM\nCategory: Readability\nAST: FunctionDef/ClassDef/Assign(name style)\n\nFunctions and variables should use snake_case.\nClasses should use PascalCase.\nConstants should use UPPER_CASE.",
+    "correct_code": "def my_function():\n    pass\n\nclass MyClass:\n    pass\n\nMAX_VALUE = 10",
+    "wrong_code": "def MyFunction():\n    pass\n\nclass my_class:\n    pass\n\nmaxValue = 10",
+    "keywords": "naming, conventions, snake_case, PascalCase",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Readability"
+  },
+  {
+    "rule_number": "4",
+    "rule_title": "Imports",
+    "description": "Priority: MEDIUM\nCategory: Maintainability\nAST: Import / ImportFrom\n\nUse separate import lines and group:\n1. Standard library\n2. Third-party\n3. Local modules",
+    "correct_code": "import os\nimport sys\n\nimport numpy as np\n\nfrom mypkg import helper",
+    "wrong_code": "import sys, os\nimport numpy, mypkg",
+    "keywords": "imports, import order, stdlib, third party",
+    "ast_pattern": "Import(multiple names same line)",
+    "bug_type": "Style"
+  },
+  {
+    "rule_number": "5",
+    "rule_title": "Whitespace",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Layout Rule\n\nAvoid unnecessary whitespace.",
+    "correct_code": "x = 1\ny = x + 2",
+    "wrong_code": "x=1\ny=x+2",
+    "keywords": "whitespace, pep8, spacing",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Formatting"
+  },
+  {
+    "rule_number": "6",
+    "rule_title": "Function Length",
+    "description": "Priority: MEDIUM\nCategory: Maintainability\nAST: FunctionDef(body size)\n\nPrefer small focused functions.\nAvoid functions longer than ~50 lines unless justified.",
+    "correct_code": "def add(a, b):\n    return a + b",
+    "wrong_code": "def giant_function():\n    pass",
+    "keywords": "function, length",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "7",
+    "rule_title": "Variable Naming Quality",
+    "description": "Priority: MEDIUM\nCategory: Readability\nAST: Assign(target names)\n\nUse meaningful variable names.",
+    "correct_code": "total_count = 10",
+    "wrong_code": "x = 10",
+    "keywords": "variable, naming, quality, snake_case, PascalCase",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Readability"
+  },
+  {
+    "rule_number": "8",
+    "rule_title": "Nesting Depth",
+    "description": "Priority: MEDIUM\nCategory: Maintainability\nAST: Nested If/For/While depth\n\nAvoid deeply nested code. Prefer max depth around 3.",
+    "correct_code": "if a:\n    if b:\n        do_work()",
+    "wrong_code": "if a:\n    if b:\n        if c:\n            if d:\n                do_work()",
+    "keywords": "nesting, depth",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "9",
+    "rule_title": "Blank Lines",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Layout Rule\n\nUse blank lines to separate top-level definitions.",
+    "correct_code": "def a():\n    pass\n\n\ndef b():\n    pass",
+    "wrong_code": "def a():\n    pass\ndef b():\n    pass",
+    "keywords": "blank, lines",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "10",
+    "rule_title": "Whitespace Around Operators",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Layout Rule\n\nUse spaces around binary operators.",
+    "correct_code": "x = a + b",
+    "wrong_code": "x=a+b",
+    "keywords": "whitespace, around, operators, pep8, spacing",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Formatting"
+  },
+  {
+    "rule_number": "11",
+    "rule_title": "Whitespace in Function Calls",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Call / FunctionDef defaults\n\nDo not add spaces around equals in keyword args or defaults.",
+    "correct_code": "func(x=1)",
+    "wrong_code": "func(x = 1)",
+    "keywords": "whitespace, function, calls, pep8, spacing",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Formatting"
+  },
+  {
+    "rule_number": "12",
+    "rule_title": "Whitespace Inside Brackets",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Layout Rule\n\nAvoid extra whitespace inside brackets.",
+    "correct_code": "func(arr[1])",
+    "wrong_code": "func( arr[1] )",
+    "keywords": "whitespace, inside, brackets, pep8, spacing",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Formatting"
+  },
+  {
+    "rule_number": "13",
+    "rule_title": "Comments",
+    "description": "Priority: LOW\nCategory: Documentation\nAST: Comment Rule\n\nComments should be clear and helpful.",
+    "correct_code": "# Increment retry counter",
+    "wrong_code": "# do thing",
+    "keywords": "comments",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "14",
+    "rule_title": "Docstrings",
+    "description": "Priority: MEDIUM\nCategory: Documentation\nAST: FunctionDef/ClassDef without docstring\n\nPublic or non-trivial modules, functions, classes, and methods should include concise docstrings that explain purpose, important arguments, return values, side effects, or usage when helpful.\n\nUse one-line docstrings for simple cases and multi-line docstrings for more complex behavior.\n\nAvoid redundant docstrings that merely repeat the function name.",
+    "correct_code": "def compute_area(radius: float) -> float:\n    \"\"\"Return the area of a circle for the given radius.\"\"\"\n    return 3.14159 * radius ** 2\n\n\ndef fetch_data(url: str, timeout: int) -> dict:\n    \"\"\"\n    Fetch JSON data from the given URL.\n\n    Args:\n        url: Target URL.\n        timeout: Request timeout in seconds.\n\n    Returns:\n        Parsed JSON response.\n    \"\"\"\n    pass\n\n\nclass UserService:\n    \"\"\"Provide user-related business operations.\"\"\"",
+    "wrong_code": "def compute_area(radius):\n    return 3.14159 * radius ** 2\n\n\ndef fetch_data(url, timeout):\n    \"\"\"fetch data\"\"\"\n    pass\n\n\ndef save_file(path, content):\n    \"\"\"save_file\"\"\"\n    pass\n\n\nclass UserService:\n    pass",
+    "keywords": "docstrings",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "15",
+    "rule_title": "String Quotes",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Literal Style Rule\n\nUse consistent quote style in a file.",
+    "correct_code": "name = \"Alice\"",
+    "wrong_code": "name = 'Alice'\nmsg = \"Hi\"",
+    "keywords": "string, quotes",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "16",
+    "rule_title": "Return Statements",
+    "description": "Priority: HIGH\nCategory: Logic Bug\nAST: Mixed Return(value / bare return)\n\nUse consistent return behavior.",
+    "correct_code": "def f(x):\n    if x > 0:\n        return x\n    return 0",
+    "wrong_code": "def f(x):\n    if x > 0:\n        return x\n    return",
+    "keywords": "return, statements",
+    "ast_pattern": "Mixed return value / bare return",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "17",
+    "rule_title": "Comparison to None",
+    "description": "Priority: HIGH\nCategory: Logic Bug\nAST: Compare(== None / != None)\n\nUse `is None` or `is not None`.",
+    "correct_code": "if value is None:\n    pass",
+    "wrong_code": "if value == None:\n    pass",
+    "keywords": "comparison, none, conditional check",
+    "ast_pattern": "Compare(== None / != None)",
+    "bug_type": "Logic Bug"
+  },
+  {
+    "rule_number": "18",
+    "rule_title": "Comparison to Booleans",
+    "description": "Priority: MEDIUM\nCategory: Readability\nAST: Compare(x == True/False)\n\nUse boolean values directly.",
+    "correct_code": "if ready:\n    run()",
+    "wrong_code": "if ready == True:\n    run()",
+    "keywords": "comparison, booleans, conditional check",
+    "ast_pattern": "Compare(True / False)",
+    "bug_type": "Logic Bug"
+  },
+  {
+    "rule_number": "19",
+    "rule_title": "Exception Handling",
+    "description": "Priority: HIGH\nCategory: Error Handling\nAST: ExceptHandler(type=None)\n\nCatch specific exceptions. Avoid bare except.",
+    "correct_code": "try:\n    x = int(s)\nexcept ValueError:\n    pass",
+    "wrong_code": "try:\n    x = int(s)\nexcept:\n    pass",
+    "keywords": "exception, handling, try except, bare except",
+    "ast_pattern": "Try(ExceptHandler(type=None))",
+    "bug_type": "Error Handling"
+  },
+  {
+    "rule_number": "20",
+    "rule_title": "Exception Chaining",
+    "description": "Priority: HIGH\nCategory: Error Handling\nAST: Raise without cause inside except\n\nUse `raise ... from e`.",
+    "correct_code": "try:\n    work()\nexcept IOError as e:\n    raise RuntimeError() from e",
+    "wrong_code": "try:\n    work()\nexcept IOError:\n    raise RuntimeError()",
+    "keywords": "exception, chaining, try except, bare except",
+    "ast_pattern": "Raise(without cause inside except)",
+    "bug_type": "Error Handling"
+  },
+  {
+    "rule_number": "21",
+    "rule_title": "Context Managers",
+    "description": "Priority: HIGH\nCategory: Resource Safety\nAST: open() without with\n\nUse context managers for files/resources.",
+    "correct_code": "with open(\"a.txt\") as f:\n    data = f.read()",
+    "wrong_code": "f = open(\"a.txt\")\ndata = f.read()\nf.close()",
+    "keywords": "context, managers",
+    "ast_pattern": "open() without with",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "22",
+    "rule_title": "List Comprehensions",
+    "description": "Priority: MEDIUM\nCategory: Pythonic Style\nAST: map/filter(lambda)\n\nPrefer simple comprehensions over map/filter with lambda.",
+    "correct_code": "vals = [x*x for x in nums]",
+    "wrong_code": "vals = list(map(lambda x: x*x, nums))",
+    "keywords": "list, comprehensions",
+    "ast_pattern": "map/filter(lambda)",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "23",
+    "rule_title": "Type Hints",
+    "description": "Priority: MEDIUM\nCategory: Static Analysis\nAST: FunctionDef missing annotations\n\nUse type hints when practical.",
+    "correct_code": "def add(a: int, b: int) -> int:\n    return a + b",
+    "wrong_code": "def add(a, b):\n    return a + b",
+    "keywords": "type, hints, typing, annotations",
+    "ast_pattern": "FunctionDef missing annotations",
+    "bug_type": "Static Analysis"
+  },
+  {
+    "rule_number": "24",
+    "rule_title": "Magic Numbers",
+    "description": "Priority: MEDIUM\nCategory: Maintainability\nAST: Numeric literals repeated\n\nReplace unexplained repeated numbers with constants.",
+    "correct_code": "MAX_RETRIES = 3",
+    "wrong_code": "for _ in range(3):\n    pass",
+    "keywords": "magic, numbers",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "25",
+    "rule_title": "Trailing Whitespace",
+    "description": "Priority: LOW\nCategory: Formatting\nAST: Layout Rule\n\nDo not leave trailing whitespace.",
+    "correct_code": "x = 1",
+    "wrong_code": "x = 1",
+    "keywords": "trailing, whitespace, pep8, spacing",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "Formatting"
+  },
+  {
+    "rule_number": "26",
+    "rule_title": "Semicolons",
+    "description": "Priority: MEDIUM\nCategory: Readability\nAST: Multiple statements same line\n\nDo not use semicolons for multiple statements.",
+    "correct_code": "x = 1\ny = 2",
+    "wrong_code": "x = 1; y = 2",
+    "keywords": "semicolons",
+    "ast_pattern": "Multiple statements one line",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "27",
+    "rule_title": "Lambda Assignments",
+    "description": "Priority: MEDIUM\nCategory: Readability\nAST: Assign(value=Lambda)\n\nUse def instead of assigning lambda.",
+    "correct_code": "def double(x):\n    return x * 2",
+    "wrong_code": "double = lambda x: x * 2",
+    "keywords": "lambda, assignments, anonymous function",
+    "ast_pattern": "Assign(value=Lambda)",
+    "bug_type": "Readability"
+  },
+  {
+    "rule_number": "28",
+    "rule_title": "Global Variables",
+    "description": "Priority: HIGH\nCategory: Maintainability\nAST: Global(name)\n\nAvoid globals. Pass values explicitly.",
+    "correct_code": "def scale(x, m):\n    return x * m",
+    "wrong_code": "multiplier = 3\ndef scale(x):\n    return x * multiplier",
+    "keywords": "global, variables, global variable",
+    "ast_pattern": "Global(name)",
+    "bug_type": "Maintainability"
+  },
+  {
+    "rule_number": "29",
+    "rule_title": "Mutable Default Arguments",
+    "description": "Priority: HIGH\nCategory: Runtime Bug\nAST: FunctionDef(default=List|Dict|Set)\n\nUse None then create mutable object inside function.",
+    "correct_code": "def add(x, items=None):\n    if items is None:\n        items = []\n    items.append(x)",
+    "wrong_code": "def add(x, items=[]):\n    items.append(x)",
+    "keywords": "mutable, default, arguments, list default, dict default, shared state",
+    "ast_pattern": "FunctionDef(default=List|Dict|Set)",
+    "bug_type": "Runtime Bug"
+  },
+  {
+    "rule_number": "30",
+    "rule_title": "f-Strings Over Format",
+    "description": "Priority: LOW\nCategory: Modern Python Style\nAST: .format() / % formatting\n\nPrefer f-strings in modern Python.",
+    "correct_code": "msg = f\"Hi {name}\"",
+    "wrong_code": "msg = \"Hi {}\".format(name)",
+    "keywords": "strings, over, format",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "31",
+    "rule_title": "Section Comments",
+    "description": "Priority: MEDIUM\nCategory: Readability\nAST: FunctionDef(long body without comments)\n\nFunctions longer than 10 lines should use short section comments to separate logical steps.",
+    "correct_code": "def process_orders(orders):\n    # Validate input\n    if not orders:\n        return []\n\n    # Transform records\n    cleaned = [o.strip() for o in orders]\n\n    # Save results\n    return cleaned",
+    "wrong_code": "def process_orders(orders):\n    if not orders:\n        return []\n    cleaned = [o.strip() for o in orders]\n    return cleaned",
+    "keywords": "section, comments",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "32",
+    "rule_title": "Early Returns",
+    "description": "Priority: HIGH\nCategory: Maintainability\nAST: Deep nested If blocks\n\nPrefer early returns to reduce nesting and improve readability.",
+    "correct_code": "def divide(a, b):\n    if b == 0:\n        return None\n    return a / b",
+    "wrong_code": "def divide(a, b):\n    if b != 0:\n        return a / b\n    else:\n        return None",
+    "keywords": "early, returns",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "33",
+    "rule_title": "Named Threshold Constants",
+    "description": "Priority: MEDIUM\nCategory: Maintainability\nAST: Magic numbers\n\nUse named constants for business thresholds or repeated values.",
+    "correct_code": "MAX_RETRIES = 3\n\nfor _ in range(MAX_RETRIES):\n    retry()",
+    "wrong_code": "for _ in range(3):\n    retry()",
+    "keywords": "named, threshold, constants",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "34",
+    "rule_title": "Main Guard",
+    "description": "Priority: MEDIUM\nCategory: Python Best Practice\nAST: Top-level executable script without main guard\n\nExecutable scripts should use main() and if __name__ == \"__main__\".",
+    "correct_code": "def main():\n    run_program()\n\nif __name__ == \"__main__\":\n    main()",
+    "wrong_code": "run_program()",
+    "keywords": "main, guard",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "35",
+    "rule_title": "Explicit File Encoding",
+    "description": "Priority: MEDIUM\nCategory: Reliability\nAST: open() without encoding\n\nSpecify encoding=\"utf-8\" for text files unless another encoding is required.",
+    "correct_code": "with open(\"data.txt\", \"r\", encoding=\"utf-8\") as file:\n    content = file.read()",
+    "wrong_code": "with open(\"data.txt\", \"r\") as file:\n    content = file.read()",
+    "keywords": "explicit, file, encoding",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  },
+  {
+    "rule_number": "36",
+    "rule_title": "Logging Over Print",
+    "description": "Priority: MEDIUM\nCategory: Production Readiness\nAST: print() in utility/service code\n\nPrefer logging instead of print statements outside tiny scripts.",
+    "correct_code": "import logging\n\nlogger = logging.getLogger(__name__)\nlogger.info(\"Processing started\")",
+    "wrong_code": "print(\"Processing started\")",
+    "keywords": "logging, over, print",
+    "ast_pattern": "Style / Formatting Rule",
+    "bug_type": "General Quality"
+  }
+]

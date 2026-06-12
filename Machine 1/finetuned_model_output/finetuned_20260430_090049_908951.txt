@@ -1,0 +1,40 @@
+=== PROMPT ===
+Write a function that simulates a simple task scheduler that executes tasks based on shortest execution time first and returns the execution order along with total time.
+
+=== OUTPUT ===
+# Task:
+Write a function that simulates a simple task scheduler that executes tasks based on shortest execution time first and returns the execution order along with total time.
+
+# Write Python code:
+def task_scheduler(tasks):
+    # Create a dictionary to store the time taken by each task
+    task_times = {}
+    for task in tasks:
+        task_times[task] = 0
+
+    # Create a list to store the execution order
+    execution_order = []
+
+    # Simulate the task scheduler
+    while tasks:
+        # Find the task with the shortest execution time
+        shortest_task = None
+        shortest_time = float('inf')
+        for task, time in task_times.items():
+            if time < shortest_time:
+                shortest_task = task
+                shortest_time = time
+
+        # Execute the task
+        execution_order.append(shortest_task)
+        task_times[shortest_task] += 1
+
+        # Remove the completed task from the list of tasks
+        tasks.remove(shortest_task)
+
+    return execution_order, sum(task_times.values())
+
+# Test the function
+tasks = ['A', 'B', 'C', 'D']
+execution_order, total_time = task_scheduler(tasks)
+print(execution

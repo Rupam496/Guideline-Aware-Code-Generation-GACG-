@@ -1,0 +1,423 @@
+"""
+grpo_trainer.py
+===============
+Runs on Machine 1 (GPU 0).
+
+Generator : Qwen/Qwen2.5-Coder-3B-Instruct  in 4-bit + LoRA
+Judge     : Remote HTTP server on Machine 2 (via RewardPipeline)
+
+VRAM budget (3B model on ~10.5 GB GPU):
+  Qwen-3B 4-bit weights       ~2.0 GB
+  LoRA adapters               ~0.05 GB
+  GRPO frozen reference copy  ~2.0 GB
+  Activations + gradients     ~1.5 GB
+  Optimizer states (8-bit)    ~0.5 GB
+  KV cache / misc             ~0.5 GB
+  Total                       ~6.5 GB   (very comfortable)
+
+Compatibility: trl==0.8.6, transformers==4.40.0, peft==0.10.0
+NOTE: trl 0.8.6 GRPOConfig does NOT support:
+  - num_generations          → use num_return_sequences in generate_kwargs
+  - generation_batch_size    → not available
+  - top_k / top_p / temperature in GRPOConfig → use generate_kwargs
+  - processing_class         → use tokenizer=
+  - kl_coef                  → use beta=
+
+FIXES (v2):
+  FIX 1 — generate_kwargs passed directly to GRPOTrainer instead of
+           patching model.generation_config after trainer init.
+           In trl 0.8.6 the trainer builds its own generation config
+           internally; post-init patching is silently ignored.
+
+  FIX 2 — _reward_fn no longer declares `prompts` as a positional arg.
+           trl 0.8.6 passes dataset columns as **kwargs, not positional.
+           We now read the prompt via kwargs.get("prompt", []) which
+           correctly receives the formatted prompt strings.
+"""
+
+import os
+import re
+import warnings
+import logging
+
+os.environ["TRANSFORMERS_VERBOSITY"]   = "error"
+os.environ["TOKENIZERS_PARALLELISM"]   = "false"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"]  = "expandable_segments:True"
+
+warnings.filterwarnings("ignore")
+logging.disable(logging.WARNING)
+
+import torch
+torch.backends.cuda.enable_flash_sdp(False)
+torch.backends.cuda.enable_mem_efficient_sdp(False)
+torch.backends.cuda.enable_math_sdp(True)
+
+
+from dataclasses import dataclass
+from typing import List
+
+from datasets import Dataset
+from trl import GRPOTrainer, GRPOConfig
+
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    #BitsAndBytesConfig,
+    TrainerCallback,
+)
+
+from peft import (
+    LoraConfig,
+    get_peft_model,
+    #prepare_model_for_kbit_training,
+)
+
+from reward_pipeline import RewardPipeline
+
+
+# =====================================================
+# Utility — strip chat-template wrapper from completion
+# =====================================================
+# TRL 0.8.6 passes the FULL decoded string (prompt + completion).
+# We must extract only the assistant's reply for the judge.
+_ASSISTANT_RE = re.compile(
+    r"<\|im_start\|>assistant\s*(.*?)(?:<\|im_end\|>|$)",
+    re.DOTALL,
+)
+
+
+def extract_assistant_reply(text: str) -> str:
+    """
+    Pull out the assistant's generated reply from a Qwen chat-formatted string.
+    Falls back to the raw text if the pattern is not found.
+    """
+    m = _ASSISTANT_RE.search(text)
+    if m:
+        return m.group(1).strip()
+    # Fallback: strip anything that looks like a system/user preamble
+    # by taking content after the last occurrence of '\nassistant\n'
+    if "\nassistant\n" in text:
+        return text.split("\nassistant\n")[-1].strip()
+    return text.strip()
+
+
+# =====================================================
+# Clean logging callback
+# =====================================================
+class CleanLogCallback(TrainerCallback):
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if not logs:
+            return
+
+        step   = state.global_step
+        total  = state.max_steps
+        # trl 0.8.6 key names
+        reward = logs.get("reward", logs.get("rewards/mean", logs.get("env/reward_mean", 0.0)))
+        loss   = logs.get("loss", 0.0)
+        kl     = logs.get("kl",   logs.get("rewards/kl", logs.get("objective/kl", 0.0)))
+        lr     = logs.get("learning_rate", 0.0)
+
+        print(
+            f"[{step:>4}/{total}] "
+            f"loss={loss:.20f}  "
+            f"reward={reward:.4f}  "
+            f"kl={kl:.8f}  "
+            f"lr={lr:.2e}"
+        )
+
+
+# =====================================================
+# Trainer Config
+# =====================================================
+@dataclass
+class TrainerConfig:
+
+    # --------------------------------------------------
+    # Model — 3B fits very comfortably on 10.5 GB
+    # --------------------------------------------------
+    model_name: str = "Qwen/Qwen2.5-Coder-1.5B"
+    output_dir: str = "grpo_output"
+
+    # --------------------------------------------------
+    # Training
+    # --------------------------------------------------
+    num_train_epochs: int   = 12
+
+    learning_rate:    float = 1.5e-5    # slightly higher than 7B — 3B needs more signal
+
+    # --------------------------------------------------
+    # GRPO group — 4 completions per prompt
+    # Passed via generate_kwargs to GRPOTrainer
+    # --------------------------------------------------
+    group_size: int = 2
+
+    # --------------------------------------------------
+    # Sequence lengths
+    # prompt(384) + completion(384) = 768 — fine for 3B
+    # --------------------------------------------------
+    max_prompt_length:     int = 384
+    max_completion_length: int = 192
+
+    # --------------------------------------------------
+    # Sampling — passed through generate_kwargs
+    # --------------------------------------------------
+    temperature: float = 0.7
+    top_k:       int   = 40
+    top_p:       float = 0.92
+
+    # --------------------------------------------------
+    # LoRA — r=8 is plenty for a 3B model
+    # --------------------------------------------------
+    lora_r:       int   = 4
+    lora_alpha:   int   = 8
+    lora_dropout: float = 0.05
+
+    # --------------------------------------------------
+    # Memory
+    # --------------------------------------------------
+    gradient_accumulation_steps: int   = 2     # 3B is fast; less accumulation needed
+    max_grad_norm:               float = 0.1
+
+    # --------------------------------------------------
+    # KL coefficient (trl 0.8.6 calls it beta)
+    # --------------------------------------------------
+    kl_beta: float = 0.02
+
+    # --------------------------------------------------
+    # Saving / logging
+    # --------------------------------------------------
+    save_steps:    int = 25
+    logging_steps: int = 1
+
+
+# =====================================================
+# Trainer
+# =====================================================
+class GRPOCodeTrainer:
+
+    def __init__(
+        self,
+        config:          TrainerConfig,
+        reward_pipeline: RewardPipeline,
+    ):
+        self.config          = config
+        self.reward_pipeline = reward_pipeline
+
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            config.model_name,
+            padding_side="left",    # required for batch generation
+        )
+
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        self.model = self._load_generator()
+
+    # -------------------------------------------------
+    # Load generator — pinned to cuda:0
+    # -------------------------------------------------
+    def _load_generator(self) -> AutoModelForCausalLM:
+
+        print(f"Loading generator: {self.config.model_name}")
+
+        #bnb = BitsAndBytesConfig(
+            #load_in_4bit=True,
+            #bnb_4bit_compute_dtype=torch.bfloat16,
+            #bnb_4bit_quant_type="nf4",
+            #bnb_4bit_use_double_quant=True,
+        #)
+
+        model = AutoModelForCausalLM.from_pretrained(
+            self.config.model_name,
+            #quantization_config=bnb,
+            torch_dtype=torch.float32,
+
+            low_cpu_mem_usage=True,
+            attn_implementation="eager",
+            device_map={"": 0},
+        )
+
+        #        model = prepare_model_for_kbit_training(
+        #            model,
+        #            use_gradient_checkpointing=False,
+        #        )
+
+        lora = LoraConfig(
+            r=self.config.lora_r,
+            lora_alpha=self.config.lora_alpha,
+            target_modules=[
+                "q_proj", "k_proj", "v_proj", "o_proj",
+                "gate_proj", "up_proj", "down_proj",
+            ],
+            lora_dropout=self.config.lora_dropout,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+
+        model = get_peft_model(model, lora)
+        model.enable_input_require_grads()
+        model.gradient_checkpointing_disable()
+        #for param in model.parameters():
+            #if param.requires_grad:
+                #param.data = param.data.float()
+        model.config.use_cache = True
+
+        trainable, total = model.get_nb_trainable_parameters()
+        print(
+            f"Generator ready | "
+            f"trainable: {trainable/1e6:.1f}M / {total/1e6:.1f}M "
+            f"({100*trainable/total:.1f}%)"
+        )
+
+        return model
+
+    # -------------------------------------------------
+    # Format prompt with Qwen chat template
+    # -------------------------------------------------
+    def _format_prompt(self, prompt: str) -> str:
+        messages = [{"role": "user", "content": prompt}]
+        return self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+
+    # -------------------------------------------------
+    # Reward function — called by GRPOTrainer
+    #
+    # FIX 2: trl 0.8.6 calls reward_funcs(completions, **kwargs)
+    # Dataset columns (including "prompt") arrive in **kwargs,
+    # NOT as a positional argument. The old signature declared
+    # `prompts=None` as positional which always received None.
+    #
+    # 'completions' in trl 0.8.6 are the FULL decoded strings
+    # (prompt + generated text). We strip the assistant reply
+    # before sending to the judge, so the judge never sees
+    # the chat-template boilerplate (which caused !!!! garbage).
+    # -------------------------------------------------
+    def _reward_fn(self, completions: List[str], **kwargs) -> List[float]:
+
+        # FIX 2: read prompt from kwargs — trl 0.8.6 passes the
+        # dataset "prompt" column here, not as a positional arg.
+        prompts     = kwargs.get("plain_prompt", kwargs.get("prompt", kwargs.get("prompts", [])))
+        prompt_text = prompts[0] if prompts else ""
+
+        codes = []
+        for c in completions:
+            if isinstance(c, list):
+                # Occasional token-id list — decode first
+                raw = self.tokenizer.decode(c, skip_special_tokens=True)
+            else:
+                raw = c
+            # Extract only the assistant's reply — strip chat template noise
+            codes.append(extract_assistant_reply(raw))
+
+        return self.reward_pipeline.score_batch(
+            codes=codes,
+            prompt=prompt_text,
+        )
+
+    # -------------------------------------------------
+    # Train
+    # -------------------------------------------------
+    def train(self, prompts: List[str]):
+
+        formatted = [self._format_prompt(p) for p in prompts]
+        dataset   = Dataset.from_dict({"prompt": formatted, "plain_prompt": prompts})
+
+        # --------------------------------------------------
+        # trl 0.8.6 GRPOConfig — only pass args that exist
+        # in this version. Generation kwargs go separately.
+        # --------------------------------------------------
+        cfg = GRPOConfig(
+            output_dir=self.config.output_dir,
+
+            # Core training
+            num_train_epochs=self.config.num_train_epochs,
+            learning_rate=self.config.learning_rate,
+
+            # Batch
+            per_device_train_batch_size=2,
+            num_generations=self.config.group_size,
+            gradient_accumulation_steps=self.config.gradient_accumulation_steps,
+
+            # Sequence lengths
+            max_prompt_length=self.config.max_prompt_length,
+            max_completion_length=self.config.max_completion_length,
+
+            # Optimizer
+            optim="adamw_hf",
+            max_grad_norm=self.config.max_grad_norm,
+
+            # Precision
+            fp16=False,
+            gradient_checkpointing=False,
+
+            # KL penalty (trl 0.8.6 uses 'beta', not 'kl_coef')
+            beta=self.config.kl_beta,
+            temperature=0.8,
+
+            # Logging / saving
+            logging_steps=self.config.logging_steps,
+            save_steps=self.config.save_steps,
+            report_to="none",
+        )
+
+        # --------------------------------------------------
+        # FIX 1: Pass generate_kwargs directly to GRPOTrainer.
+        #
+        # In trl 0.8.6 the trainer builds its own generation
+        # config internally at __init__ time. Patching
+        # model.generation_config afterwards is silently
+        # ignored because the trainer has already captured
+        # its own copy. generate_kwargs is the correct and
+        # only reliable way to control generation in 0.8.6.
+        #
+        # GenerationConfig import is no longer needed.
+        # --------------------------------------------------
+        # generate_kwargs = {
+        #     "num_return_sequences": self.config.group_size,
+        #     "do_sample":            True,
+        #     "temperature":          0.7,
+        #     "top_k":                50,
+        #     "top_p":                0.9,
+        #     "max_new_tokens":       self.config.max_completion_length,
+        #     "pad_token_id":         self.tokenizer.pad_token_id,
+        #     "eos_token_id":         self.tokenizer.eos_token_id,
+        #     "remove_invalid_values": True,
+        #     "renormalize_logits": True,
+        # }
+
+        # --------------------------------------------------
+        # trl 0.8.6 GRPOTrainer — uses 'tokenizer=', not
+        # 'processing_class='.  generate_kwargs passed here
+        # so group_size / sampling params are honoured.
+        # --------------------------------------------------
+        # Apply generation settings FIRST
+        self.model.generation_config.do_sample = True
+        self.model.generation_config.temperature = self.config.temperature
+        self.model.generation_config.top_p = self.config.top_p
+        self.model.generation_config.top_k = self.config.top_k
+        self.model.generation_config.max_new_tokens = self.config.max_completion_length
+        self.model.generation_config.pad_token_id = self.tokenizer.pad_token_id
+        self.model.generation_config.eos_token_id = self.tokenizer.eos_token_id
+
+        # Then create trainer
+        trainer = GRPOTrainer(
+            model=self.model,
+            processing_class=self.tokenizer,
+            args=cfg,
+            train_dataset=dataset,
+            reward_funcs=self._reward_fn,
+            callbacks=[CleanLogCallback()],
+        )
+
+        print("Starting GRPO training…")
+        trainer.train()
+        
+
+        trainer.save_model(self.config.output_dir)
+        self.tokenizer.save_pretrained(self.config.output_dir)
+
+        print(f"Training complete. Model saved → {self.config.output_dir}")
